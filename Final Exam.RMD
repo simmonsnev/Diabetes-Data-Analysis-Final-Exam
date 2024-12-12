@@ -11,7 +11,7 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE) #Eliminates errors and l
 ```
 
 ```{r}
-library(tidyverse)
+library(tidyverse)  #Load in Packages
 library(caret)
 library(knitr)
 ```
@@ -19,10 +19,10 @@ library(knitr)
 #Part 1
 
 ```{r}
-diabetesdata <- read_csv("diabetes_data.csv")
+diabetesdata <- read_csv("diabetes_data.csv")  #Read Data
 
-diabetesdata <- diabetesdata %>%
-  mutate(diabetes = as.factor(diabetes),
+diabetesdata <- diabetesdata %>%          #Change data into Factors!
+  mutate(diabetes = as.factor(diabetes),   #Binary Response!
          gender = as.factor(gender),
          hypertension = as.factor(hypertension),
          heart_disease = as.factor(heart_disease),
@@ -31,12 +31,12 @@ diabetesdata <- diabetesdata %>%
 
 ```{r}
 set.seed(1211)
-DiabetesIndex <- createDataPartition(1:nrow(diabetesdata), p=0.80)$Resample1
+DiabetesIndex <- createDataPartition(1:nrow(diabetesdata), p=0.80)$Resample1   #Partition Data
 
-diabetes_train <- filter(diabetesdata, row_number() %in% DiabetesIndex)
+diabetes_train <- filter(diabetesdata, row_number() %in% DiabetesIndex)   #Create Subset of Data
 diabetes_test <- filter(diabetesdata, !row_number() %in% DiabetesIndex)
 
-train_control <- trainControl(method = "repeatedcv", number = 5, repeats=10)
+train_control <- trainControl(method = "repeatedcv", number = 5, repeats=10)   #Make CV with 10 repeats
 ```
 
 ```{r, cache=TRUE}
@@ -47,7 +47,7 @@ diabetes.log <- train(diabetes ~ gender + age + hypertension + heart_disease +
                 method="glm",
                 family = "binomial",
                 trControl=train_control)
-logvarimp <- varImp(diabetes.log)
+logvarimp <- varImp(diabetes.log)  #Make first logistic regression
 logvarimp
 ```
 
@@ -59,7 +59,7 @@ diabetes.tree <- train(diabetes ~ HbA1c_level + age + blood_glucose_level + bmi,
                 method="rpart",
                 trControl=train_control,
                 tuneLength=5)
-treevarimp <- varImp(diabetes.tree)
+treevarimp <- varImp(diabetes.tree)  #Make Regression Tree
 treevarimp
 ```
 
@@ -73,7 +73,7 @@ diabetes.rf <- train(diabetes ~ gender + age + hypertension + heart_disease +
                 tuneGrid=expand.grid(mtry=1:4),
                 ntree = 500,
                 importance=TRUE)
-variableimp <- varImp(diabetes.rf$finalModel)
+variableimp <- varImp(diabetes.rf$finalModel)   #Make Random Forest
 variableimp
 ```
 
@@ -96,7 +96,7 @@ rather than just a small subset.
 ```{r}
 models.summary <- resamples(list(Logistic= diabetes.log,
                          SingleTree = diabetes.tree,
-                         RandomForest= diabetes.rf))
+                         RandomForest= diabetes.rf))   #Find Accuracy Scores
 summary(models.summary)
 ```
 ```{r}
@@ -106,7 +106,7 @@ diabetes_test %>%
          RanForPred = predict(diabetes.rf, newdata=diabetes_test)) %>%
   summarize(LogAccuracy = mean(LogPred == diabetes),
             TreeAccuracy = mean(TreePred == diabetes),
-            RanAccuracy = mean(RanForPred == diabetes))
+            RanAccuracy = mean(RanForPred == diabetes))   #Test on Test Set
                 
 ```
 
