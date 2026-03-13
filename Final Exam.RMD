@@ -16,13 +16,14 @@ library(caret)
 library(knitr)
 ```
 
-#Part 1
+# Part 1
 
 ```{r}
 diabetesdata <- read_csv("diabetes_data.csv")  #Read Data
 
 diabetesdata <- diabetesdata %>%          #Change data into Factors!
-  mutate(diabetes = as.factor(diabetes),   #Binary Response!
+  mutate(diabetes = factor(diabetes, levels = c(0, 1), 
+                                  labels = c("Negative", "Positive")),  #Binary Response!
          gender = as.factor(gender),
          hypertension = as.factor(hypertension),
          heart_disease = as.factor(heart_disease),
@@ -77,18 +78,8 @@ variableimp <- varImp(diabetes.rf$finalModel)   #Make Random Forest
 variableimp
 ```
 
-Based on the variable importance of the random forest model, the HbA1c level seems to be the 
-most important predictor of diabetes with a score of 91.94. Blood glucose level seems to be 
-the next highest predictor of diabetes with a score of 58.7. The next three highest variables 
-are age with a score of 41.06, positive for hypertension or high blood pressure with 18.51 and 
-lastly positive for heart disease with 13.56. As far as the models are concerned, I chose a 
-logistic regression to get a relatively simple model to predict every variable. This gave me 
-a good baseline as it is the least complex model chosen. Next I chose a single regression tree 
-to get a little more complex but this time only test a small subset of variables. For the variables 
-chosen I picked variables I would think would have the most importance in determining diabetes based 
-on information learned in biology and prior knowledge of diabetes. Finally I took the most complex 
-route of random forest to discover the variable importance as well as get a final baseline using the 
-most complex prediction. I chose all predictors to understand the importance of every single predictor 
+Based on the variable importance of the random forest model, the HbA1c level seems to be the most important predictor of diabetes with a score of 91.94. Blood glucose level seems to be the next highest predictor of diabetes with a score of 58.7. The next three highest variables are age with a score of 41.06, positive for hypertension or high blood pressure with 18.51 and lastly positive for heart disease with 13.56. As far as the models are concerned, I chose a logistic regression to get a relatively simple model to predict every variable. This gave me a good baseline as it is the least complex model chosen. Next I chose a single regression tree to get a little more complex but this time only test a small subset of variables. For the variables 
+chosen I picked variables I would think would have the most importance in determining diabetes based on information learned in biology and prior knowledge of diabetes. Finally I took the most complex route of random forest to discover the variable importance as well as get a final baseline using the most complex prediction. I chose all predictors to understand the importance of every single predictor 
 rather than just a small subset. 
 
 # Part 2
@@ -110,11 +101,9 @@ diabetes_test %>%
                 
 ```
 
-
-
 ```{r}
-BoxWhiskerPlot <- bwplot(models.summary, metric="Accuracy") #BW Plot comes from Dr. Kim's 363 In Class 20
-# Also in Module 3 part 2 of this class
+BoxWhiskerPlot <- bwplot(models.summary, metric="Accuracy",
+                         main = "Training Data Cross-Validation")
 BoxWhiskerPlot
 ```
 Since Diabetes was changed to a factored variable, we are no longer treating it 
@@ -139,44 +128,38 @@ no-no in the medical field.
 
 
 ```{r}
-HBA1cViolinPlot <- ggplot(diabetesdata) +
-  geom_violin(aes(x = diabetes, y = HbA1c_level, fill = diabetes, alpha = 0.4)) +
-  geom_boxplot(aes(x = diabetes, y = HbA1c_level), width = 0.1, outlier.shape = NA) +
-  stat_summary(aes(x = diabetes, y = HbA1c_level), fun = mean, shape = 20, size = 1, color = 'blue') +
+HBA1cBoxPlot <- ggplot(diabetesdata) +
+  geom_boxplot(aes(x = diabetes, y = HbA1c_level, fill = diabetes), 
+               alpha = 0.8, show.legend = FALSE) + 
+  stat_summary(aes(x = diabetes, y = HbA1c_level), 
+               fun = mean, geom = "point", shape = 18, size = 3, color = "darkred") + 
   scale_y_continuous(limits = c(3, 9)) +
-   labs(title = "HbA1c Level as a Predictor For Diabetes",
-        caption = "Based on this Violin plot, a good pick for a binary response variable, \
-       it appears that the positive test of diabetes does have a large amount of correlation\
-       with this predictor of HbA1c. Of course this would make sense considering this statistic \
-       is judging the highness of your blood sugar over a period of time.",
+  scale_fill_manual(values = c("Negative" = "#d3d3d3", "Positive" = "#00539F")) +
+  labs(title = "Higher HbA1c Levels Strongly Correlate with Diabetes",
        y = "HbA1C Level", 
        x = "Test Result for Diabetes") +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
-        plot.subtitle = element_text(hjust = 0.5, size = 13.5),
-        axis.title = element_text(size = 11),
-        plot.caption = element_text(hjust = 0.5, size = 11),
-        panel.grid.major.x = element_blank(),   #Get rid of horizontal lines
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 11),
+        panel.grid.major.x = element_blank(),   
         panel.grid.minor = element_blank()) 
-HBA1cViolinPlot
+
+HBA1cBoxPlot
 ```
 
 ```{r}
 HBA1cDensityPlot <- ggplot(diabetesdata, aes(x = HbA1c_level, fill = factor(diabetes))) +
   geom_density(alpha = 0.4) +
+  scale_fill_manual(values = c("Negative" = "#d3d3d3", "Positive" = "#00539F")) +
   labs(title = "HbA1c Level as a Predictor For Diabetes",
-       subtitle = "",
+       subtitle = "Y-Scale in distribution of occurences",
        y = "Density", 
-       x = "HbA1c Level",
-       caption = "This density plot appears to show less of a drastic difference as \
-       shown by the violin plot, but still a noticeable right skewed dataset towards the \
-       larger values of HbA1c correlating with a positive test result. However, the large portion \
-       of the data is largely overlapped so this is not a perfect indicator.") +
+       x = "HbA1c Level") +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
         plot.subtitle = element_text(hjust = 0.5, size = 13.5),
-        axis.title = element_text(size = 11),
-        plot.caption = element_text(hjust = 0.5, size = 11),
+        axis.title = element_text(size = 12, face = "bold"),
         panel.grid.major.x = element_blank(),   #Get rid of horizontal lines
         panel.grid.minor = element_blank()) 
 HBA1cDensityPlot
@@ -186,18 +169,15 @@ HBA1cDensityPlot
 ```{r}
 AgeDensityPlot <- ggplot(diabetesdata, aes(x = age, fill = factor(diabetes))) +
   geom_density(alpha = 0.4) +
-  labs(title = "Age as a Predictor For Diabetes",
+  scale_fill_manual(values = c("Negative" = "#d3d3d3", "Positive" = "#00539F")) +
+  labs(title = "Diabetes Risk Increases Sharply After Age 45",
        subtitle = "Y-Scale in distribution of occurences",
-       caption = "Although age was not the 1st or 2nd highest of variable importance, \
-       it appears to play a large role when considering the aging effect on the diabetes risk. \
-       Specifically after around the age of 45 there is a sharp spike in density of positive results.",
        y = "Density", 
        x = "Age in Years") +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
         plot.subtitle = element_text(hjust = 0.5, size = 13.5),
-        axis.title = element_text(size = 12),
-        plot.caption = element_text(hjust = 0.5, size = 11),
+        axis.title = element_text(size = 12, face = "bold"),
         panel.grid.major.x = element_blank(),   #Get rid of horizontal lines
         panel.grid.minor = element_blank())
 AgeDensityPlot
@@ -205,29 +185,28 @@ AgeDensityPlot
 
 ```{r}
 BGLboxplot <- ggplot(diabetesdata) +
-  geom_boxplot(aes(x= blood_glucose_level, y = diabetes)) + 
-  labs(title = "Blood Glucose Level as a Predictor For Diabetes",
-       x = "Blood Glucose Level", 
-       y = "Test Result for Diabetes",
-       caption = "To fully grasp the results, a boxplot was chosen to show the IQR in a \
-       positive result skewing the data quite considerably. The means in this predictor are \
-       quite similar, but the shear range of positive diabetes cases with a high blood sugar\
-       level make this data quite skewed. This does not appear to be the best predictor of Diabetes.") +
-  scale_y_discrete(breaks = c("0", "1"),
-                   labels = c("Negative", "Positive")) +
+  geom_boxplot(aes(x = diabetes, y = blood_glucose_level, fill = diabetes), 
+               alpha = 0.8, show.legend = FALSE) + 
+  stat_summary(aes(x = diabetes, y = blood_glucose_level), 
+               fun = mean, geom = "point", shape = 18, size = 3, color = "darkred") + 
+  scale_fill_manual(values = c("Negative" = "#d3d3d3", "Positive" = "#00539F")) +
+  
+  labs(title = "High Blood Glucose Strongly Correlates with Positive Cases",
+       y = "Blood Glucose Level", 
+       x = "Test Result for Diabetes") +
   theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
-        axis.title = element_text(size = 11),
-        plot.caption = element_text(hjust = 0.5, size = 11),
-        panel.grid.major.x = element_blank(),   #Get rid of horizontal lines
-        panel.grid.minor = element_blank()) 
+  theme(plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+        axis.title = element_text(size = 12, face = "bold"),
+        panel.grid.major.x = element_blank(),   
+        panel.grid.minor = element_blank())
 BGLboxplot
 ```
 
 
 ```{r, fig.width=17, fig.height=12}
 library(patchwork)
-Dashboard <- (HBA1cViolinPlot | HBA1cDensityPlot) / (AgeDensityPlot | BGLboxplot)
+Dashboard <- (HBA1cBoxPlot | HBA1cDensityPlot) / (AgeDensityPlot | BGLboxplot)
+Dashboard <- Dashboard + plot_layout(guides = "collect")
 Dashboard
 ```
 
